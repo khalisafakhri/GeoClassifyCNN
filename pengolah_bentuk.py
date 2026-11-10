@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PENGOLAH FOTO BENTUK
+PENGOLAH BENTUK
 
 Alur:
 1. Cari garis gambar di foto
