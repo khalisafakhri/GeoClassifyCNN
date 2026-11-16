@@ -226,6 +226,7 @@ history = model.fit(X_latih, y_latih,
                     epochs=EPOCHS, batch_size=32,
                     callbacks=[berhenti_dini])
 
+
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
 plt.plot(history.history["accuracy"], label="train")
@@ -338,7 +339,119 @@ def baca_bentuk(path_foto, tampilkan=True):
     return keluaran
 
 
-# %% 7. Tes dengan memberi foto, dan lihat hasilnya
+# %% 7. Gambar confusion matrix
 
-PATH_FOTO = r"C:\Users\fakhr\Downloads\foto_bentuk.jpeg"
-hasil = baca_bentuk(PATH_FOTO)
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Nama yang tampil di gambar
+NAMA_TAMPIL = {
+    "parallelogram": "Jajar genjang",
+    "rectangle": "Persegi panjang",
+    "square": "Persegi",
+    "bukan": "Bukan",
+}
+nama_tampil = [NAMA_TAMPIL.get(n, n) for n in NAMA_KELAS]
+jumlah = len(nama_tampil)
+
+# 1. Model menebak semua data uji
+y_tebak = np.argmax(model.predict(X_test, verbose=0), axis=1)
+
+# 2. Hitung tabel: baris = jawaban benar, kolom = tebakan model
+tabel = np.zeros((jumlah, jumlah), dtype=int)
+for benar, tebak in zip(y_test, y_tebak):
+    tabel[benar, tebak] += 1
+
+# Persen per baris (berapa persen dari tiap jawaban benar yang jatuh ke tiap tebakan)
+persen = tabel / np.maximum(tabel.sum(axis=1, keepdims=True), 1)
+
+# 3. Gambar tabelnya
+fig, ax = plt.subplots(figsize=(7.2, 5.6), dpi=200)
+ax.imshow(persen, cmap="Blues", vmin=0, vmax=1)
+
+for i in range(jumlah):
+    for j in range(jumlah):
+        warna = "white" if persen[i, j] > 0.55 else "#1a1a1a"
+        ax.text(j, i - 0.08, f"{tabel[i, j]}", ha="center", va="center",
+                fontsize=17, fontweight="bold", color=warna)
+        ax.text(j, i + 0.24, f"{100 * persen[i, j]:.1f}%", ha="center", va="center",
+                fontsize=10.5, color=warna)
+
+ax.set_xticks(range(jumlah))
+ax.set_yticks(range(jumlah))
+ax.set_xticklabels(nama_tampil, fontsize=11)
+ax.set_yticklabels(nama_tampil, fontsize=11)
+ax.xaxis.tick_top()
+ax.xaxis.set_label_position("top")
+ax.set_xlabel("Tebakan model", fontsize=12, labelpad=10)
+ax.set_ylabel("Jawaban benar", fontsize=12)
+for sisi in ax.spines.values():
+    sisi.set_visible(False)
+ax.tick_params(length=0)
+ax.set_xticks(np.arange(-0.5, jumlah, 1), minor=True)
+ax.set_yticks(np.arange(-0.5, jumlah, 1), minor=True)
+ax.grid(which="minor", color="white", linewidth=2)
+ax.tick_params(which="minor", length=0)
+plt.tight_layout()
+
+# 4. Simpan sebagai gambar, lalu tampilkan
+path_gambar = os.path.join(FOLDER_PROYEK, "matriks_kebingungan.png")
+plt.savefig(path_gambar, facecolor="white")
+plt.show()
+print("Gambar tersimpan di:", path_gambar)
+
+# 5. Ringkasan angka
+print("\nAkurasi data uji:", round(100 * np.trace(tabel) / tabel.sum(), 2), "%")
+print("kelas | benar (recall) | presisi")
+for i, nama in enumerate(nama_tampil):
+    recall = 100 * tabel[i, i] / max(tabel[i].sum(), 1)
+    presisi = 100 * tabel[:, i].sum() and 100 * tabel[i, i] / max(tabel[:, i].sum(), 1)
+    print(f"{nama} | {recall:.1f}% | {presisi:.1f}%")
+    
+# %% 8. Grafik
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Ambil catatan latihan dari sel 5
+riwayat = history.history
+jumlah_epoch = len(riwayat["loss"])
+epoch = np.arange(1, jumlah_epoch + 1)
+
+terbaik = int(np.argmin(riwayat["val_loss"])) + 1
+
+# 2. Gambar dua grafik
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2), dpi=200)
+
+for ax, kunci, judul in [(ax1, "accuracy", "Akurasi"), (ax2, "loss", "Loss")]:
+    ax.plot(epoch, riwayat[kunci], color="#1f5fa8", linewidth=2, marker="o", markersize=3.5, label="Latih")
+    ax.plot(epoch, riwayat["val_" + kunci], color="#e8821e", linewidth=2, marker="o", markersize=3.5, label="Validasi")
+    ax.axvline(terbaik, color="gray", linestyle="--", linewidth=1)
+    ax.set_title(judul, fontsize=13, fontweight="bold")
+    ax.set_xlabel("Epoch", fontsize=11)
+    ax.set_xticks(epoch if jumlah_epoch <= 15 else np.arange(1, jumlah_epoch + 1, 2))
+    ax.grid(alpha=0.25)
+    for sisi in ("top", "right"):
+        ax.spines[sisi].set_visible(False)
+    ax.legend(frameon=False, fontsize=10)
+
+ax1.text(terbaik, ax1.get_ylim()[0], f" epoch terbaik ({terbaik})", color="gray", fontsize=9, va="bottom")
+plt.tight_layout()
+
+# 3. Simpan sebagai gambar, lalu tampilkan
+path_gambar = os.path.join(FOLDER_PROYEK, "grafik_latihan.png")
+plt.savefig(path_gambar, facecolor="white")
+plt.show()
+print("Gambar tersimpan di:", path_gambar)
+
+# 4. Ringkasan angka untuk slide
+print("\nEpoch yang dijalankan:", jumlah_epoch, "dari maksimal", EPOCHS)
+if jumlah_epoch < EPOCHS:
+    print(f"Latihan berhenti di epoch {jumlah_epoch} karena val_loss tidak membaik 5 epoch (EarlyStopping).")
+else:
+    print("Latihan berjalan sampai batas epoch maksimal.")
+print(f"Bobot terbaik dari epoch {terbaik}: "
+      f"val_accuracy = {riwayat['val_accuracy'][terbaik - 1]:.4f}, val_loss = {riwayat['val_loss'][terbaik - 1]:.4f}")
+print(f"Akurasi latih di epoch itu: {riwayat['accuracy'][terbaik - 1]:.4f}")
