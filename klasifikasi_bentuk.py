@@ -45,7 +45,6 @@ for split in ["train", "val", "test"]:
         folder = os.path.join(DATA_DIR, split, kelas)
         print(split, kelas, "->", len(os.listdir(folder)), "gambar")
 
-
 # %% 2. Lihat contoh gambar
 
 plt.figure(figsize=(9, 9))
@@ -338,7 +337,6 @@ def baca_bentuk(path_foto, tampilkan=True):
         plt.show()
     return keluaran
 
-
 # %% 7. Gambar confusion matrix
 
 import os
@@ -408,7 +406,7 @@ for i, nama in enumerate(nama_tampil):
     recall = 100 * tabel[i, i] / max(tabel[i].sum(), 1)
     presisi = 100 * tabel[:, i].sum() and 100 * tabel[i, i] / max(tabel[:, i].sum(), 1)
     print(f"{nama} | {recall:.1f}% | {presisi:.1f}%")
-    
+
 # %% 8. Grafik
 
 import os
